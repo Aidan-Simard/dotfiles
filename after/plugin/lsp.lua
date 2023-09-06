@@ -5,7 +5,7 @@ lsp.preset('recommended')
 lsp.ensure_installed({
     'gopls',
     'lua_ls',
-    'pyright',
+    'pylsp',
     'html',
     'cssmodules_ls',
     'tailwindcss',
