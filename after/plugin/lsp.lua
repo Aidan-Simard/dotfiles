@@ -9,6 +9,7 @@ lsp.ensure_installed({
     'html',
     'cssmodules_ls',
     'tailwindcss',
+    'elixirls'
 })
 
 lsp.format_on_save({
@@ -23,6 +24,7 @@ lsp.format_on_save({
         ['pyright'] = { 'python' },
         ['cssmodules_ls'] = { 'css' },
         ['tailwindcss'] = { 'html', 'htmldjango' },
+        ['elixirls'] = { 'ex', 'exs' },
     }
 })
 

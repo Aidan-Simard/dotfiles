@@ -1,6 +1,6 @@
 local time = os.date("*t")
 local variant = "auto"
-if time.hour > 6 and time.hour < 20 then
+if time.hour > 6 and time.hour < 18 then
     variant = "dawn"
 end
 
