@@ -1,11 +1,5 @@
-local time = os.date("*t")
-local variant = "auto"
-if time.hour > 6 and time.hour < 18 then
-    variant = "dawn"
-end
-
 require('rose-pine').setup({
-    variant = variant,
+    variant = 'auto',
     highlight_groups = {
         ColorColumn = { bg = 'surface' },
         StatusLine = { fg = "love", bg = "love", blend = 10 },

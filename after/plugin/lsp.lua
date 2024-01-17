@@ -2,6 +2,20 @@ local lsp = require('lsp-zero')
 
 lsp.preset('recommended')
 
+require('mason').setup({})
+require('mason-lspconfig').setup({
+    ensure_installed = {
+        'gopls',
+        'lua_ls',
+        'pylsp',
+        'html',
+        'cssmodules_ls',
+        'tailwindcss',
+        'elixirls',
+        'templ'
+    }
+})
+
 lsp.ensure_installed({
     'gopls',
     'lua_ls',
@@ -9,7 +23,8 @@ lsp.ensure_installed({
     'html',
     'cssmodules_ls',
     'tailwindcss',
-    'elixirls'
+    'elixirls',
+    'templ'
 })
 
 lsp.format_on_save({
@@ -25,6 +40,7 @@ lsp.format_on_save({
         ['cssmodules_ls'] = { 'css' },
         ['tailwindcss'] = { 'html', 'htmldjango' },
         ['elixirls'] = { 'ex', 'exs' },
+        ['templ'] = { 'templ' }
     }
 })
 
@@ -53,5 +69,12 @@ lsp.on_attach(function(client, bufnr)
     vim.keymap.set("n", "gd", function() vim.lsp.buf.definition() end, opts)
     vim.keymap.set("i", "<C-h>", function() vim.lsp.buf.signature_help() end, opts)
 end)
+
+-- additional filetypes
+vim.filetype.add({
+    extension = {
+        templ = "templ",
+    },
+})
 
 lsp.setup()
