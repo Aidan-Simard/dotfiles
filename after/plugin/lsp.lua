@@ -40,7 +40,8 @@ lsp.format_on_save({
         ['cssmodules_ls'] = { 'css' },
         ['tailwindcss'] = { 'html', 'htmldjango' },
         ['elixirls'] = { 'ex', 'exs' },
-        ['templ'] = { 'templ' }
+        ['templ'] = { 'templ' },
+        ['tsserver'] = { 'javascript', 'typescript', 'javascriptreact', 'typescriptreact' }
     }
 })
 
