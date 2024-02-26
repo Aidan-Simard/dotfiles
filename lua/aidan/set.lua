@@ -31,3 +31,8 @@ vim.opt.colorcolumn = "80"
 vim.g.mapleader = " "
 
 vim.cmd('autocmd VimLeave * set guicursor= | call chansend(v:stderr, "\x1b[ q")')
+
+vim.api.nvim_create_autocmd("FileType", {
+    pattern = "javascript,typescript,javascriptreact,typescriptreact",
+    command = "setlocal shiftwidth=2 tabstop=2 softtabstop=2 "
+})
