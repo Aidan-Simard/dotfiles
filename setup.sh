@@ -9,6 +9,8 @@ GO_VER='1.23.4'
 # .tmux.conf    -> ~/.tmux.conf
 # wsl.conf      -> /etc/wsl.conf
 
+sudo apt update -y && sudo apt upgrade -y
+
 # Copy neovim configuration
 mkdir ~/.config
 cp -r nvim ~/.config
