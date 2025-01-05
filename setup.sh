@@ -33,7 +33,7 @@ rm -rf /usr/local/go && tar -C /usr/local -xzf "go$GO_VER.linux-amd64.tar.gz"
 rm "go$GO_VER.linux-amd64.tar.gz"
 
 # Install Luajit
-sudo apt install make gcc
+sudo apt install make gcc -y
 git clone https://luajit.org/git/luajit.git /usr/local/luajit
 (
     cd /usr/local/luajit
