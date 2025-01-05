@@ -31,6 +31,7 @@ curl -LO "https://github.com/neovim/neovim/releases/download/$NEOVIM_VER/nvim-li
 sudo rm -rf /opt/nvim
 sudo tar -C /opt -xzf nvim-linux64.tar.gz
 rm nvim-linux64.tar.gz
+sudo apt install ripgrep python3.12-venv -y
 
 # Install golang
 wget "https://go.dev/dl/go$GO_VER.linux-amd64.tar.gz"
@@ -39,7 +40,7 @@ rm "go$GO_VER.linux-amd64.tar.gz"
 
 # Install Luajit
 sudo apt install make gcc -y
-git clone https://luajit.org/git/luajit.git /usr/local/luajit
+sudo git clone https://luajit.org/git/luajit.git /usr/local/luajit
 (
     cd /usr/local/luajit
     sudo make && sudo make install
