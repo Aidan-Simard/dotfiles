@@ -20,7 +20,7 @@ cp wsl.conf /etc/
 
 # Install neovim
 # https://github.com/neovim/neovim/blob/master/INSTALL.md#pre-built-archives-2
-curl -LO "https://github.com/neovim/neovim/releases/$NEOVIM_VER/download/nvim-linux64.tar.gz"
+curl -LO "https://github.com/neovim/neovim/releases/download/$NEOVIM_VER/nvim-linux64.tar.gz"
 sudo rm -rf /opt/nvim
 sudo tar -C /opt -xzf nvim-linux64.tar.gz
 rm nvim-linux64.tar.gz
@@ -31,7 +31,7 @@ rm -rf /usr/local/go && tar -C /usr/local -xzf "go$GO_VER.linux-amd64.tar.gz"
 rm "go$GO_VER.linux-amd64.tar.gz"
 
 # Install Luajit
-git clone https://luajit.org/git/luajit.git /usr/local/
+git clone https://luajit.org/git/luajit.git /usr/local/luajit
 (
     cd /usr/local/luajit
     make && sudo make install
