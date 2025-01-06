@@ -31,7 +31,7 @@ curl -LO "https://github.com/neovim/neovim/releases/download/$NEOVIM_VER/nvim-li
 sudo rm -rf /opt/nvim
 sudo tar -C /opt -xzf nvim-linux64.tar.gz
 rm nvim-linux64.tar.gz
-sudo apt install ripgrep python3.12-venv -y
+sudo apt install ripgrep python3-venv -y
 
 # Install golang
 wget "https://go.dev/dl/go$GO_VER.linux-amd64.tar.gz"
