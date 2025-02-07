@@ -15,4 +15,3 @@
 ## Programs installed
 - Neovim
 - Golang
-- Luajit

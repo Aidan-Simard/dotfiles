@@ -1,0 +1,74 @@
+---
+- name: Setup
+  hosts: localhost
+  remote_user: root
+
+  tasks:
+  - name: Create dev directory
+    ansible.builtin.file:
+      path: ~/dev
+      state: directory
+
+  - name: Create go directory
+    ansible.builtin.file:
+      path: ~/dev/go
+      state: directory
+
+  - name: Create projects directory
+    ansible.builtin.file:
+      path: ~/dev/projects
+      state: directory
+
+  - name: Update and upgrade OS
+    ansible.builtin.apt:
+      update_cache: true
+      upgrade: yes
+
+  - name: Copy .bashrc
+    ansible.builtin.copy:
+      dest: ~
+      src: .bashrc
+
+  - name: Copy .tmux.conf
+    ansible.builtin.copy:
+      dest: ~
+      src: .tmux.conf
+
+  - name: Copy wsl.conf
+    ansible.builtin.copy:
+      dest: /etc/
+      src: wsl.conf
+
+  - name: Copy neovim configuration
+    ansible.builtin.copy:
+      dest: ~/.config/
+      src: nvim
+
+  - name: Install neovim dependencies
+    ansible.builtin.apt:
+      name:
+        - ripgrep
+        - python3-venv
+
+  - name: Install neovim
+    ansible.builtin.shell: |
+      if ! test -d /opt/nvim; then
+        curl -LO "https://github.com/neovim/neovim/releases/download/v0.10.2/nvim-linux64.tar.gz"
+        sudo rm -rf /opt/nvim
+        sudo tar -C /opt -xzf nvim-linux64.tar.gz
+        rm nvim-linux64.tar.gz
+      fi
+
+  - name: Install golang
+    ansible.builtin.shell: |
+      if ! test -d /usr/local/go; then
+        wget "https://go.dev/dl/go1.23.4.linux-amd64.tar.gz"
+        sudo rm -rf /usr/local/go && sudo tar -C /usr/local -xzf "go1.23.4.linux-amd64.tar.gz"
+        rm "go1.23.4.linux-amd64.tar.gz"
+      fi
+
+  - name: Install rust
+    ansible.builtin.shell: |
+      if ! test -d ~/.cargo/bin; then
+        curl --proto '=https' --tlsv1.2 https://sh.rustup.rs -sSf | sh
+      fi

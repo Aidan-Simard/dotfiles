@@ -1,35 +1,46 @@
 local lsp = require('lsp-zero')
+local lspconfig = require('lspconfig')
 
 lsp.preset('recommended')
 
 require('mason').setup({})
-require('mason-lspconfig').setup({
-    ensure_installed = {
-        'gopls',
-        'lua_ls',
-        'pylsp',
-    }
-})
+require('mason-lspconfig').setup({})
 
 lsp.ensure_installed({
     'gopls',
     'lua_ls',
     'pylsp',
+    'html',
+    'pyright',
+    'rust-analyzer'
 })
 
 lsp.format_on_save({
     format_opts = {
         async = false,
         timeout_ms = 10000,
-    },
-    servers = {
-        ['lua_ls'] = { 'lua' },
-        ['gopls'] = { 'go' },
-        ['pyright'] = { 'python' },
     }
 })
 
-require('lspconfig').tailwindcss.setup {}
+--- lsp config setups
+lspconfig.htmx.setup {}
+lspconfig.rust_analyzer.setup {}
+lspconfig.tailwindcss.setup {}
+lspconfig.html.setup {
+    filetypes = {
+        'html',
+        'htmldjango'
+    }
+}
+lspconfig.eslint.setup({
+    on_attach = function(client, bufnr)
+        vim.api.nvim_create_autocmd("BufWritePre", {
+            buffer = bufnr,
+            command = "EslintFixAll",
+        })
+    end,
+})
+
 
 local cmp = require('cmp')
 local cmp_select = { behavior = cmp.SelectBehavior.Select }
@@ -54,12 +65,5 @@ lsp.on_attach(function(client, bufnr)
     vim.keymap.set("n", "gd", function() vim.lsp.buf.definition() end, opts)
     vim.keymap.set("i", "<C-h>", function() vim.lsp.buf.signature_help() end, opts)
 end)
-
--- additional filetypes
-vim.filetype.add({
-    extension = {
-        templ = "templ",
-    },
-})
 
 lsp.setup()
