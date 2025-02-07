@@ -1,7 +1,7 @@
 ---
 - name: Setup
   hosts: localhost
-  remote_user: root
+  strategy: debug
 
   tasks:
   - name: Create dev directory
@@ -26,12 +26,12 @@
 
   - name: Copy .bashrc
     ansible.builtin.copy:
-      dest: ~
+      dest: ~/
       src: .bashrc
 
   - name: Copy .tmux.conf
     ansible.builtin.copy:
-      dest: ~
+      dest: ~/
       src: .tmux.conf
 
   - name: Copy wsl.conf
@@ -50,25 +50,53 @@
         - ripgrep
         - python3-venv
 
-  - name: Install neovim
+  - name: Check if neovim is installed
     ansible.builtin.shell: |
-      if ! test -d /opt/nvim; then
-        curl -LO "https://github.com/neovim/neovim/releases/download/v0.10.2/nvim-linux64.tar.gz"
-        sudo rm -rf /opt/nvim
-        sudo tar -C /opt -xzf nvim-linux64.tar.gz
-        rm nvim-linux64.tar.gz
+      if ! command -v nvim; then
+        exit 1
       fi
+    register: nvim_exists
+    ignore_errors: yes
+
+  - name: Install neovim
+    when: nvim_exists.rc == 1
+    ansible.builtin.shell: |
+      curl -LO "https://github.com/neovim/neovim/releases/download/v0.10.2/nvim-linux64.tar.gz"
+      sudo rm -rf /opt/nvim
+      sudo tar -C /opt -xzf nvim-linux64.tar.gz
+      rm nvim-linux64.tar.gz
+
+  - name: Check if golang is installed
+    ansible.builtin.shell: |
+      if ! command -v go; then
+        exit 1
+      fi
+    register: go_exists
+    ignore_errors: yes
 
   - name: Install golang
+    when: go_exists.rc == 1
     ansible.builtin.shell: |
-      if ! test -d /usr/local/go; then
-        wget "https://go.dev/dl/go1.23.4.linux-amd64.tar.gz"
-        sudo rm -rf /usr/local/go && sudo tar -C /usr/local -xzf "go1.23.4.linux-amd64.tar.gz"
-        rm "go1.23.4.linux-amd64.tar.gz"
+      wget "https://go.dev/dl/go1.23.4.linux-amd64.tar.gz"
+      sudo rm -rf /usr/local/go && sudo tar -C /usr/local -xzf "go1.23.4.linux-amd64.tar.gz"
+      rm "go1.23.4.linux-amd64.tar.gz"
+
+  - name: Check if cargo is installed
+    ansible.builtin.shell: |
+      if ! command -v cargo; then
+        exit 1
       fi
+    register: cargo_exists
+    ignore_errors: yes
+
+  - name: Download rust installer
+    when: cargo_exists.rc == 1
+    ansible.builtin.get_url:
+      url: https://sh.rustup.rs
+      dest: /tmp/sh.rustup.rs
+      mode: '0755'
+      force: 'yes'
 
   - name: Install rust
-    ansible.builtin.shell: |
-      if ! test -d ~/.cargo/bin; then
-        curl --proto '=https' --tlsv1.2 https://sh.rustup.rs -sSf | sh
-      fi
+    when: cargo_exists.rc == 1
+    ansible.builtin.shell: /tmp/sh.rustup.rs -y
