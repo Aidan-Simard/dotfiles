@@ -2,6 +2,8 @@
 - name: Setup
   hosts: localhost
   strategy: debug
+  become: true
+  become_user: "{{ lookup('env', 'USER') }}"
 
   tasks:
   - name: Create dev directory
@@ -23,6 +25,7 @@
     ansible.builtin.apt:
       update_cache: true
       upgrade: yes
+    become_user: root
 
   - name: Copy .bashrc
     ansible.builtin.copy:
@@ -38,6 +41,7 @@
     ansible.builtin.copy:
       dest: /etc/
       src: wsl.conf
+      become_user: root
 
   - name: Copy neovim configuration
     ansible.builtin.copy:
@@ -51,46 +55,42 @@
         - python3-venv
 
   - name: Check if neovim is installed
-    ansible.builtin.shell: |
-      if ! command -v nvim; then
-        exit 1
-      fi
+    ansible.builtin.shell: which nvim
     register: nvim_exists
-    ignore_errors: yes
+    changed_when: nvim_exists.rc == 1
 
   - name: Install neovim
     when: nvim_exists.rc == 1
     ansible.builtin.shell: |
-      curl -LO "https://github.com/neovim/neovim/releases/download/v0.10.2/nvim-linux64.tar.gz"
-      sudo rm -rf /opt/nvim
-      sudo tar -C /opt -xzf nvim-linux64.tar.gz
-      rm nvim-linux64.tar.gz
+      echo "Installing neovim"
+        # curl -LO "https://github.com/neovim/neovim/releases/download/v0.10.2/nvim-linux64.tar.gz"
+        # sudo rm -rf /opt/nvim
+        # sudo tar -C /opt -xzf nvim-linux64.tar.gz
+        # rm nvim-linux64.tar.gz
 
   - name: Check if golang is installed
-    ansible.builtin.shell: |
-      if ! command -v go; then
-        exit 1
-      fi
+    ansible.builtin.shell: which go
     register: go_exists
-    ignore_errors: yes
+    failed_when: False
+    changed_when: go_exists.rc == 1
 
   - name: Install golang
     when: go_exists.rc == 1
     ansible.builtin.shell: |
-      wget "https://go.dev/dl/go1.23.4.linux-amd64.tar.gz"
-      sudo rm -rf /usr/local/go && sudo tar -C /usr/local -xzf "go1.23.4.linux-amd64.tar.gz"
-      rm "go1.23.4.linux-amd64.tar.gz"
+      echo "Installing go"
+        # wget "https://go.dev/dl/go1.23.4.linux-amd64.tar.gz"
+        # sudo rm -rf /usr/local/go && sudo tar -C /usr/local -xzf "go1.23.4.linux-amd64.tar.gz"
+        # rm "go1.23.4.linux-amd64.tar.gz"
 
   - name: Check if cargo is installed
-    ansible.builtin.shell: |
-      if ! command -v cargo; then
-        exit 1
-      fi
+    ansible.builtin.shell: which cargo
     register: cargo_exists
-    ignore_errors: yes
+    failed_when: False
+    changed_when: cargo_exists.rc == 1
 
   - name: Download rust installer
     when: cargo_exists.rc == 1
+    become_user: root
     ansible.builtin.get_url:
       url: https://sh.rustup.rs
       dest: /tmp/sh.rustup.rs
@@ -99,4 +99,5 @@
 
   - name: Install rust
     when: cargo_exists.rc == 1
-    ansible.builtin.shell: /tmp/sh.rustup.rs -y
+    ansible.builtin.shell: |
+      /tmp/sh.rustup.rs -y

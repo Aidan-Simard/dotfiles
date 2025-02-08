@@ -12,7 +12,7 @@ lsp.ensure_installed({
     'pylsp',
     'html',
     'pyright',
-    'rust-analyzer'
+    'rust_analyzer'
 })
 
 lsp.format_on_save({
