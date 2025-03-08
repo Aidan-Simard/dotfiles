@@ -12,7 +12,10 @@ lsp.ensure_installed({
     'pylsp',
     'html',
     'pyright',
-    'rust_analyzer'
+    'lexical',
+    'bashls',
+    'yamlls',
+    'ansiblels'
 })
 
 lsp.format_on_save({
@@ -24,7 +27,6 @@ lsp.format_on_save({
 
 --- lsp config setups
 lspconfig.htmx.setup {}
-lspconfig.rust_analyzer.setup {}
 lspconfig.tailwindcss.setup {}
 lspconfig.html.setup {
     filetypes = {
@@ -40,7 +42,18 @@ lspconfig.eslint.setup({
         })
     end,
 })
+lspconfig.yamlls.setup({
+    settings = {
+        yaml = {
+            schemas = {
+            }
+        }
+    }
+})
+lspconfig.ansiblels.setup({})
+lspconfig.lexical.setup({})
 
+--- cmp mappings
 
 local cmp = require('cmp')
 local cmp_select = { behavior = cmp.SelectBehavior.Select }

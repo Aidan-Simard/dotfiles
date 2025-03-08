@@ -2,10 +2,24 @@
 # see /usr/share/doc/bash/examples/startup-files (in the package bash-doc)
 # for examples
 
+# go
 export PATH=$PATH:/usr/local/go/bin
+
+# nvim
 export PATH=$PATH:/opt/nvim-linux64/bin
+
+# luajit
 export PATH=$PATH:/usr/local/luajit/src
-export PATH="$PATH:$HOME/.cargo/bin"
+
+# elixir
+installs_dir=$HOME/.elixir-install/installs
+export PATH=$installs_dir/otp/27.1.2/bin:$PATH
+export PATH=$installs_dir/elixir/1.18.2-otp-27/bin:$PATH
+
+# nvm/node
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
+[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
 
 # Automatically start python virtual environments on cd
 function cd() {

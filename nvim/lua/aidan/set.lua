@@ -34,3 +34,12 @@ vim.cmd('autocmd VimLeave * set guicursor= | call chansend(v:stderr, "\x1b[ q")'
 vim.cmd(
     'autocmd FileType yaml,htmldjango,html,javascript,typescript,json,javascriptreact,typescriptreact :setlocal sw=2 ts=2 sts=2')
 vim.cmd [[autocmd BufWritePre * lua vim.lsp.buf.format()]]
+
+vim.filetype.add({
+    pattern = {
+        -- ansible playbook
+        [".*/.*playbook.*.ya?ml"] = "yaml.ansible",
+        [".*/.*tasks.*/.*ya?ml"] = "yaml.ansible",
+        [".*/local.ya?ml"] = "yaml.ansible",
+    },
+})

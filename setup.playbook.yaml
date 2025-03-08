@@ -1,0 +1,116 @@
+---
+- name: Setup
+  hosts: localhost
+  strategy: debug
+  become: true
+  become_user: "{{ lookup('env', 'USER') }}"
+
+  tasks:
+    - name: Create dev directory
+      ansible.builtin.file:
+        path: ~/dev
+        state: directory
+        mode: '0755'
+
+    - name: Create projects directory
+      ansible.builtin.file:
+        path: ~/dev/projects
+        state: directory
+        mode: '0755'
+
+    - name: Update and upgrade OS
+      ansible.builtin.apt:
+        update_cache: true
+        upgrade: true
+      become_user: root
+      become: true
+
+    - name: Copy .bashrc
+      ansible.builtin.copy:
+        dest: ~/
+        src: .bashrc
+        mode: '0755'
+
+    - name: Copy .tmux.conf
+      ansible.builtin.copy:
+        dest: ~/
+        src: .tmux.conf
+        mode: '0755'
+
+    - name: Copy wsl.conf
+      ansible.builtin.copy:
+        dest: /etc/
+        src: wsl.conf
+        mode: '0755'
+      become_user: root
+      become: true
+
+    - name: Copy neovim configuration
+      ansible.builtin.copy:
+        dest: ~/.config/
+        src: nvim
+        mode: '0755'
+
+    - name: Install neovim dependencies
+      ansible.builtin.apt:
+        name:
+          - ripgrep
+          - python3-venv
+
+    - name: Check if neovim is installed
+      ansible.builtin.command: which nvim
+      register: nvim_exists
+      failed_when: false
+      changed_when: nvim_exists.rc == 1
+
+    - name: Install neovim
+      when: nvim_exists.rc == 1
+      ansible.builtin.shell: |
+        echo "Installing neovim"
+        curl -LO "https://github.com/neovim/neovim/releases/download/v0.10.2/nvim-linux64.tar.gz"
+        sudo rm -rf /opt/nvim
+        sudo tar -C /opt -xzf nvim-linux64.tar.gz
+        rm nvim-linux64.tar.gz
+
+    - name: Check if golang is installed
+      ansible.builtin.command: which go
+      register: go_exists
+      failed_when: false
+      changed_when: go_exists.rc == 1
+
+    - name: Install golang
+      when: go_exists.rc == 1
+      ansible.builtin.shell: |
+        echo "Installing go"
+        wget "https://go.dev/dl/go1.23.4.linux-amd64.tar.gz"
+        sudo rm -rf /usr/local/go && sudo tar -C /usr/local -xzf "go1.23.4.linux-amd64.tar.gz"
+        rm "go1.23.4.linux-amd64.tar.gz"
+
+    - name: Check if nvm is installed
+      ansible.builtin.shell: sh $HOME/.nvm/nvm.sh
+      register: nvm_exists
+      failed_when: false
+      changed_when: nvm_exists.rc == 1
+      args:
+        executable: /bin/bash
+
+    - name: Install nvm
+      when: nvm_exists.rc == 1
+      args:
+        executable: /bin/bash
+      ansible.builtin.command: >
+        curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
+        source ~/.bashrc
+
+    - name: Check if elixir is installed
+      ansible.builtin.command: which elixir
+      register: elixir_exists
+      failed_when: false
+      changed_when: elixir_exists.rc == 1
+
+    - name: Install elixir
+      when: elixir_exists.rc == 1
+      ansible.builtin.shell: |
+        curl -fsSO https://elixir-lang.org/install.sh
+        sh install.sh elixir@1.18.2 otp@27.1.2
+        installs_dir=$HOME/.elixir-install/installs
