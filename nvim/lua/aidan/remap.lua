@@ -7,3 +7,5 @@ vim.keymap.set("x", "<leader>p", "\"_dP")
 vim.keymap.set("n", "<leader>er", vim.diagnostic.goto_next, opts)
 
 vim.keymap.set("n", "<leader>ca", vim.lsp.buf.code_action)
+
+vim.keymap.set("n", "<leader>lr", vim.cmd.LspRestart)

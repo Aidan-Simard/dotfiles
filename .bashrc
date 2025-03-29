@@ -4,6 +4,7 @@
 
 # go
 export PATH=$PATH:/usr/local/go/bin
+export PATH=$PATH:"~/go/bin"
 
 # nvim
 export PATH=$PATH:/opt/nvim-linux64/bin

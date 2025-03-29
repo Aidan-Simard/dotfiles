@@ -114,3 +114,24 @@
         curl -fsSO https://elixir-lang.org/install.sh
         sh install.sh elixir@1.18.2 otp@27.1.2
         installs_dir=$HOME/.elixir-install/installs
+
+    - name: Check if luajit is installed
+      ansible.builtin.command: which luajit
+      register: luajit_exists
+      failed_when: false
+      changed_when: luajit_exists.rc == 1
+
+    - name: Install luajit dependencies
+      ansible.builtin.apt:
+        name:
+          - make
+          - gcc
+
+    - name: Install luajit
+      when: luajit_exists.rc == 1
+      ansible.builtin.shell: |
+        git clone https://luajit.org/git/luajit.git /usr/local/luajit
+        (
+            cd /usr/local/luajit
+            sudo make && sudo make install
+        )
