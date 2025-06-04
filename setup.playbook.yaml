@@ -18,12 +18,12 @@
         state: directory
         mode: '0755'
 
-    - name: Update and upgrade OS
-      ansible.builtin.apt:
-        update_cache: true
-        upgrade: true
-      become_user: root
-      become: true
+    # - name: Update and upgrade OS
+    #   ansible.builtin.apt:
+    #     update_cache: true
+    #     upgrade: true
+    #   become_user: root
+    #   become: true
 
     - name: Copy .bashrc
       ansible.builtin.copy:
@@ -56,6 +56,8 @@
         name:
           - ripgrep
           - python3-venv
+      become_user: root
+      become: true
 
     - name: Check if neovim is installed
       ansible.builtin.command: which nvim
@@ -101,37 +103,3 @@
       ansible.builtin.command: >
         curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
         source ~/.bashrc
-
-    - name: Check if elixir is installed
-      ansible.builtin.command: which elixir
-      register: elixir_exists
-      failed_when: false
-      changed_when: elixir_exists.rc == 1
-
-    - name: Install elixir
-      when: elixir_exists.rc == 1
-      ansible.builtin.shell: |
-        curl -fsSO https://elixir-lang.org/install.sh
-        sh install.sh elixir@1.18.2 otp@27.1.2
-        installs_dir=$HOME/.elixir-install/installs
-
-    - name: Check if luajit is installed
-      ansible.builtin.command: which luajit
-      register: luajit_exists
-      failed_when: false
-      changed_when: luajit_exists.rc == 1
-
-    - name: Install luajit dependencies
-      ansible.builtin.apt:
-        name:
-          - make
-          - gcc
-
-    - name: Install luajit
-      when: luajit_exists.rc == 1
-      ansible.builtin.shell: |
-        git clone https://luajit.org/git/luajit.git /usr/local/luajit
-        (
-            cd /usr/local/luajit
-            sudo make && sudo make install
-        )

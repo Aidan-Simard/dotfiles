@@ -43,3 +43,5 @@ vim.filetype.add({
     [".*/local.ya?ml"] = "yaml.ansible",
   },
 })
+
+vim.o.clipboard = "unnamedplus"

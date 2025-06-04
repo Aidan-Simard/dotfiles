@@ -17,6 +17,12 @@ installs_dir=$HOME/.elixir-install/installs
 export PATH=$installs_dir/otp/27.1.2/bin:$PATH
 export PATH=$installs_dir/elixir/1.18.2-otp-27/bin:$PATH
 
+# zig
+export PATH=$PATH:/usr/local/zig
+
+# ocaml
+eval $(opam env)
+
 # nvm/node
 export NVM_DIR="$HOME/.nvm"
 [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
@@ -44,13 +50,18 @@ function cd() {
 
 # Open up a tmux session with nvim, run window, and test window
 d () {
+    WD=$(pwd | rev | cut -d "/" -f 1 | rev)
     tmux new-session -d -n 'nvim'
+    tmux rename-session $WD
     tmux send-keys -t 'nvim' 'nvim .' Enter
     tmux new-window -n 'run'
     tmux new-window -n 'test'
     tmux select-window -t 'nvim'
     tmux attach-session -d
 }
+
+export ZED_ALLOW_EMULATED_GPU=1
+alias zed="WAYLAND_DISPLAY='' zed"
 
 ################
 # WSL DEFAULTS #

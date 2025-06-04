@@ -8,14 +8,17 @@ require('mason-lspconfig').setup({})
 
 lsp.ensure_installed({
   'gopls',
+  'htmx',
+  'tailwindcss',
+  'html',
+  'eslint',
+  'yamlls',
+  'ansiblels',
   'lua_ls',
   'pylsp',
-  'html',
-  'pyright',
-  'elixirls',
   'bashls',
-  'yamlls',
-  'ansiblels'
+  'helm_ls',
+  'elixirls'
 })
 
 lsp.format_on_save({
@@ -54,7 +57,6 @@ lspconfig.yamlls.setup({
   }
 })
 lspconfig.ansiblels.setup({})
-lspconfig.elixirls.setup({})
 lspconfig.lua_ls.setup({
   settings = {
     Lua = {
@@ -64,7 +66,12 @@ lspconfig.lua_ls.setup({
     }
   }
 })
-
+lspconfig.helm_ls.setup({})
+lspconfig.ocamllsp.setup({
+  cmd = { "ocamllsp" },
+  filetypes = { "ocaml", "ocaml.menhir", "ocaml.interface", "ocaml.ocamllex", "reason", "dune" },
+})
+lspconfig.elixirls.setup({})
 --- cmp mappings
 
 local cmp = require('cmp')
