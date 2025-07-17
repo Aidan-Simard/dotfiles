@@ -1,2 +1,2 @@
-require("config.lazy")
 require("aidan.init")
+require("config.lazy")

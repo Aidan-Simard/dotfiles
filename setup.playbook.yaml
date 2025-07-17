@@ -69,10 +69,11 @@
       when: nvim_exists.rc == 1
       ansible.builtin.shell: |
         echo "Installing neovim"
-        curl -LO "https://github.com/neovim/neovim/releases/download/v0.10.2/nvim-linux64.tar.gz"
+        curl -LO "https://github.com/neovim/neovim/releases/download/v0.11.3/nvim-linux-x86_64.tar.gz"
         sudo rm -rf /opt/nvim
-        sudo tar -C /opt -xzf nvim-linux64.tar.gz
-        rm nvim-linux64.tar.gz
+        sudo tar -C /opt -xzf nvim-linux-x86_64.tar.gz
+        sudo mv nvim-linux-x86_64 nvim-linux64
+        rm nvim-linux-x86_64.tar.gz
 
     - name: Check if golang is installed
       ansible.builtin.command: which go
