@@ -11,4 +11,4 @@ vim.keymap.set("n", "<leader>er", vim.diagnostic.goto_next, opts)
 vim.keymap.set("n", "<leader>ca", vim.lsp.buf.code_action)
 
 -- restart lsp if using lsp-zero
--- vim.keymap.set("n", "<leader>lr", vim.cmd.LspRestart)
+vim.keymap.set("n", "<leader>lr", vim.cmd.LspRestart)

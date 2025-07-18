@@ -5,7 +5,9 @@ return {
       "gopls",
       "lua_ls",
       "basedpyright",
+      "elixirls"
     },
+    automatic_enable = true
   },
   dependencies = {
     { "mason-org/mason.nvim", opts = {} },

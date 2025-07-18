@@ -10,7 +10,10 @@ return {
         "lua",
         "python",
         "bash",
-        "go"
+        "go",
+        "vim",
+        "vimdoc",
+        "query"
       },
       auto_install = true,
       highlight = {
