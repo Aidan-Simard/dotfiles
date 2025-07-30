@@ -13,8 +13,8 @@ vim.cmd(
   'autocmd FileType lua,yaml,htmldjango,html,javascript,typescript,json,javascriptreact,typescriptreact :setlocal sw=2 ts=2 sts=2')
 
 -- better indenting
-vim.opt.autoindent = true
-vim.opt.smartindent = true
+vim.opt.autoindent = false
+vim.opt.smartindent = false
 
 -- don't word wrap
 vim.opt.wrap = false
