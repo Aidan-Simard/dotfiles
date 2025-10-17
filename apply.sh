@@ -41,11 +41,12 @@ cp init.lua ~/.config/nvim
 ### LANGUAGES ###
 #################
 
-#####################
-### BASHRC & TMUX ###
-#####################
+###############
+### CONFIGS ###
+###############
 cp .bashrc_local ~
 cp .tmux.conf ~
+cp .xsessionrc ~
 
 include '. ~/.bashrc_local' ~/.bashrc
 sed -i '/^#force_color_prompt=yes/s/^#//' ~/.bashrc
