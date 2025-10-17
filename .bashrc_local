@@ -1,0 +1,16 @@
+# Opens tmux with neovim and 2 empty windows
+d () {
+  WD=$(pwd | rev | cut -d "/" -f 1 | rev)
+  tmux new-session -d -n 'nvim'
+  tmux rename-session $WD
+  tmux send-keys -t 'nvim' 'nvim .' Enter
+  tmux new-window
+  tmux new-window
+  tmux select-window -t 'nvim'
+  tmux attach-session -d
+}
+
+# Set a colored PS1 with no user/host/chroot, showing only the path
+export PS1='\[\033[01;34m\]\w\[\033[00m\] • '
+
+PATH=$PATH:/opt/nvim/bin
