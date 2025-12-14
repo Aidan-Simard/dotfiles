@@ -7,7 +7,7 @@ include() {
 ####################
 ### DEPENDENCIES ###
 ####################
-sudo apt-get -qq -y install tmux wget build-essential
+sudo apt-get -qq -y install tmux wget build-essential ripgrep
 
 ##############
 ### NEOVIM ###
