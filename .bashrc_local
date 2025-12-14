@@ -31,6 +31,6 @@ function cd() {
 }
 
 # Set a colored PS1 with no user/host/chroot, showing only the path
-export PS1='\[\033[01;34m\]\w\[\033[00m\] • '
+export PS1='\[\033[01;32m\]\u@\h\[\033[00m\]: \[\033[01;34m\]\w\[\033[00m\] • '
 
 PATH=$PATH:/opt/nvim/bin
