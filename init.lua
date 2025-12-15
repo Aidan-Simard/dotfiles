@@ -91,22 +91,22 @@ require("lazy").setup({
         }
       end
     },
-  },
-  {
-    "olimorris/codecompanion.nvim",
-    dependencies = {
-      "nvim-lua/plenary.nvim",
-      "nvim-treesitter/nvim-treesitter",
-    },
-    opts = {
-      chat = {
-        adapter = {
-          name = "copilot",
-          model = "gpt-4.1",
-        },
+    {
+      "olimorris/codecompanion.nvim",
+      dependencies = {
+        "nvim-lua/plenary.nvim",
+        "nvim-treesitter/nvim-treesitter",
       },
       opts = {
-        log_level = "DEBUG",
+        chat = {
+          adapter = {
+            name = "copilot",
+            model = "gpt-4.1",
+          },
+        },
+        opts = {
+          log_level = "DEBUG",
+        },
       },
     },
   },
