@@ -45,6 +45,7 @@ cp init.lua ~/.config/nvim
 ### CONFIGS ###
 ###############
 cp .bashrc_local ~
+cp .bashrc_extras ~
 cp .tmux.conf ~
 
 # only for laptop
