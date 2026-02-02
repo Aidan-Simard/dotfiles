@@ -170,6 +170,8 @@ vim.cmd('autocmd VimLeave * set guicursor= | call chansend(v:stderr, "\x1b[ q")'
 -- auto format on save if possible
 vim.cmd [[autocmd BufWritePre * lua vim.lsp.buf.format()]]
 
+-- setup clipboard for wsl
+vim.o.clipboard = "unnamedplus"
 
 -----------
 -- Remap --
