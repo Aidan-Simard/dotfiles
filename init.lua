@@ -9,7 +9,7 @@ if not (vim.uv or vim.loop).fs_stat(lazypath) then
   if vim.v.shell_error ~= 0 then
     vim.api.nvim_echo({
       { "Failed to clone lazy.nvim:\n", "ErrorMsg" },
-      { out, "WarningMsg" },
+      { out,                            "WarningMsg" },
       { "\nPress any key to exit..." },
     }, true, {})
     vim.fn.getchar()
@@ -35,31 +35,33 @@ require("lazy").setup({
       end
     },
     {
-      'nvim-telescope/telescope.nvim', tag = '0.1.8',
+      'nvim-telescope/telescope.nvim',
+      tag = '0.1.8',
       dependencies = { 'nvim-lua/plenary.nvim' },
-    
+
       config = function()
         local builtin = require('telescope.builtin')
         vim.keymap.set('n', '<leader>pf', builtin.find_files, {})
         vim.keymap.set('n', '<C-p>', builtin.git_files, {})
         vim.keymap.set('n', '<leader>ps', builtin.live_grep, {})
-    
+
         local telescope = require('telescope')
-        local ignore = {".git/", ".cache", "%.o", "%.a", "%.out", "%.class", "%.pdf", "%.mkv", "%.mp4", "%.zip", "node_modules/", "venv/"}
-    
+        local ignore = { ".git/", ".cache", "%.o", "%.a", "%.out", "%.class", "%.pdf", "%.mkv", "%.mp4", "%.zip",
+          "node_modules/", "venv/" }
+
         telescope.setup {
-            pickers = {
-                find_files = {
-                    hidden = true,
-                    file_ignore_patterns = ignore
-                },
-                live_grep = {
-                    additional_args = function(opts)
-                        return { "--hidden" }
-                    end,
-                    file_ignore_patterns = ignore
-                }
+          pickers = {
+            find_files = {
+              hidden = true,
+              file_ignore_patterns = ignore
+            },
+            live_grep = {
+              additional_args = function(opts)
+                return { "--hidden" }
+              end,
+              file_ignore_patterns = ignore
             }
+          }
         }
       end,
     },
@@ -68,7 +70,7 @@ require("lazy").setup({
       branch = 'master',
       lazy = false,
       build = ":TSUpdate",
-    
+
       config = function()
         require("nvim-treesitter.configs").setup {
           ensure_installed = {
@@ -109,6 +111,21 @@ require("lazy").setup({
         },
       },
     },
+    {
+      "mason-org/mason-lspconfig.nvim",
+      opts = {
+        ensure_installed = {
+          "lua_ls",
+          "ts_ls",
+          "ty",
+          "ruff"
+        }
+      },
+      dependencies = {
+        { "mason-org/mason.nvim", opts = {} },
+        "neovim/nvim-lspconfig",
+      },
+    }
   },
   install = { colorscheme = { "habamax" } },
   checker = { enabled = false },
@@ -129,7 +146,7 @@ vim.opt.expandtab = true
 
 -- modified indenting by file type
 vim.cmd(
-  'autocmd FileType lua,yaml,htmldjango,html,javascript,typescript,json,javascriptreact,typescriptreact :setlocal sw=2 ts=2 sts=2')
+  'autocmd FileType lua,yaml,htmldjango,html,javascript,typescript,json,javascriptreact,typescriptreact,svelte :setlocal sw=2 ts=2 sts=2')
 
 -- better indenting
 vim.opt.autoindent = false
@@ -172,6 +189,10 @@ vim.cmd [[autocmd BufWritePre * lua vim.lsp.buf.format()]]
 
 -- setup clipboard for wsl
 vim.o.clipboard = "unnamedplus"
+
+-- always open splits right
+vim.opt.splitright = true
+vim.opt.splitbelow = true
 
 -----------
 -- Remap --

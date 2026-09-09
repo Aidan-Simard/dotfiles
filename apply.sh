@@ -1,5 +1,8 @@
 #!/bin/bash
 
+set -eou pipefail
+
+# include a line in a file
 include() {
     grep -qxF "$1" "$2" || echo "$1" >>"$2"
 }
@@ -12,7 +15,7 @@ sudo apt-get -qq -y install tmux wget build-essential ripgrep
 ##############
 ### NEOVIM ###
 ##############
-NVIM_VER="v0.11.4"
+NVIM_VER="v0.12.5"
 install_nvim() {
     NVIM_DIR="nvim-linux-x86_64"
     NVIM_TAR="${NVIM_DIR}.tar.gz"
@@ -24,14 +27,15 @@ install_nvim() {
 }
 if [ -f "/opt/nvim/bin/nvim" ]; then
     CUR_VER=$(/opt/nvim/bin/nvim --version 2>/dev/null | head -n 1 | awk '{print $2}')
+    echo "current version of neovim: ${CUR_VER}"
     if [ "$NVIM_VER" != "$CUR_VER" ]; then
-        echo "Want nvim $NVIM_VER, have $CUR_VER."
         sudo rm -rf /opt/nvim
         install_nvim
+        echo "installed neovim ${NVIM_VER}"
     fi
 else
-    echo "Installing nvim"
     install_nvim
+    echo "installed neovim ${NVIM_VER}"
 fi
 
 mkdir -p ~/.config/nvim
@@ -44,12 +48,17 @@ cp init.lua ~/.config/nvim
 ###############
 ### CONFIGS ###
 ###############
+
+# dotfile specific config that will get updated on apply
 cp .bashrc_local ~
-cp .bashrc_extras ~
+if [ ! -f "~/.bashrc_extras" ]; then
+    # any extra config that is not overwritten on apply
+    cp .bashrc_extras ~ 
+fi
 cp .tmux.conf ~
 
 # only for laptop
-if [ "$1" = "laptop" ]; then
+if [ "${1:-}" = "laptop" ]; then
     cp .xsessionrc ~
 fi
 
