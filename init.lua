@@ -119,8 +119,6 @@ require("lazy").setup({
       opts = {
         ensure_installed = {
           "lua_ls",
-          "ts_ls",
-          "ty",
           "ruff"
         }
       },
@@ -128,6 +126,10 @@ require("lazy").setup({
         { "mason-org/mason.nvim", opts = {} },
         "neovim/nvim-lspconfig",
       },
+    },
+    {
+      "OXY2DEV/markview.nvim",
+      lazy = false,
     }
   },
   install = { colorscheme = { "habamax" } },

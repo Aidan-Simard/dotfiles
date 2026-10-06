@@ -10,7 +10,7 @@ include() {
 ####################
 ### DEPENDENCIES ###
 ####################
-sudo apt-get -qq -y install tmux wget build-essential ripgrep
+sudo apt-get -qq -y install tmux wget build-essential ripgrep xclip curl git
 
 ##############
 ### NEOVIM ###
@@ -31,8 +31,8 @@ install_nvim() {
 }
 if [ -f "/opt/nvim/bin/nvim" ]; then
     CUR_VER=$(/opt/nvim/bin/nvim --version 2>/dev/null | head -n 1 | awk '{print $2}')
-    echo "current version of neovim: ${CUR_VER}"
     if [ "$NVIM_VER" != "$CUR_VER" ]; then
+        echo "current version of neovim: ${CUR_VER}"
         sudo rm -rf /opt/nvim
         install_nvim
         echo "installed neovim ${NVIM_VER}"
@@ -49,16 +49,49 @@ cp init.lua ~/.config/nvim
 ### LANGUAGES ###
 #################
 
+# --- ASDF & Node.js ---
+ASDF_DIR="$HOME/.asdf"
+if [ ! -d "$ASDF_DIR" ]; then
+    git clone https://github.com/asdf-vm/asdf.git "$ASDF_DIR" --branch v0.14.0
+fi
+
+# Load asdf for current script process and subshells
+. "$HOME/.asdf/asdf.sh"
+export PATH="$HOME/.asdf/shims:$HOME/.asdf/bin:$PATH"
+
+# Install Node.js plugin and latest LTS release
+asdf plugin add nodejs https://github.com/asdf-vm/asdf-nodejs.git || true
+NODE_VER="lts"
+asdf install nodejs "$NODE_VER"
+asdf global nodejs "$NODE_VER"
+
+# --- Go ---
+asdf plugin add golang https://github.com/asdf-community/asdf-golang.git || true
+GO_VER="1.27.1"
+asdf install golang "$GO_VER"
+asdf global golang "$GO_VER"
+
+# --- UV (Python package manager) ---
+if ! command -v uv >/dev/null 2>&1; then
+    curl -LsSf https://astral.sh/uv/install.sh | sh
+fi
+
+export PATH="$HOME/.local/bin:$PATH"
+
 ###############
 ### CONFIGS ###
 ###############
 
-# dotfile specific config that will get updated on apply
-cp .bashrc_local ~
-if [ ! -f "~/.bashrc_extras" ]; then
-    # any extra config that is not overwritten on apply
-    cp .bashrc_extras ~ 
+# machine-local bashrc; only created if missing, never overwritten on apply
+if [ ! -f "$HOME/.bashrc_local" ]; then
+    cp .bashrc_local ~
 fi
+
+# extra config to bashrc; only seeded if missing, kept in sync by the includes below
+if [ ! -f "$HOME/.bashrc_extras" ]; then
+    cp .bashrc_extras ~
+fi
+
 cp .tmux.conf ~
 
 # only for laptop
@@ -66,5 +99,19 @@ if [ "${1:-}" = "laptop" ]; then
     cp .xsessionrc ~
 fi
 
-include '. ~/.bashrc_local' ~/.bashrc
+# source extra config (which in turn loads machine-local config) from ~/.bashrc
+include '. ~/.bashrc_extras' ~/.bashrc
 sed -i '/^#force_color_prompt=yes/s/^#//' ~/.bashrc
+
+# sync language-related shell env into .bashrc_extras; asdf must come before golang set-env
+include '. "$HOME/.asdf/asdf.sh"' ~/.bashrc_extras
+include '. "$HOME/.asdf/completions/asdf.bash"' ~/.bashrc_extras
+include '[ -f "${ASDF_DATA_DIR:-$HOME/.asdf}/plugins/golang/set-env.bash" ] && . "${ASDF_DATA_DIR:-$HOME/.asdf}/plugins/golang/set-env.bash"' ~/.bashrc_extras
+include 'export PATH="$HOME/.local/bin:$PATH"' ~/.bashrc_extras
+
+# add aidan to sudoers
+RULE="aidan ALL=(ALL) NOPASSWD: ALL"
+if [ ! -f /etc/sudoers.d/aidan ] || ! sudo grep -qxF "$RULE" /etc/sudoers.d/aidan 2>/dev/null; then
+    echo "$RULE" | sudo tee /etc/sudoers.d/aidan >/dev/null
+    sudo chmod 0440 /etc/sudoers.d/aidan
+fi
