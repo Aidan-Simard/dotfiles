@@ -43,6 +43,20 @@ fi
 mkdir -p ~/.config/nvim
 cp init.lua ~/.config/nvim
 
+###################
+### TREE-SITTER ###
+###################
+# required by nvim-treesitter's main branch to compile parsers
+TS_VER="v0.27.0"
+if ! ~/.local/bin/tree-sitter --version 2>/dev/null | grep -q "${TS_VER#v}"; then
+    mkdir -p ~/.local/bin
+    wget -qO /tmp/tree-sitter.gz "https://github.com/tree-sitter/tree-sitter/releases/download/${TS_VER}/tree-sitter-linux-x64.gz"
+    gunzip -cf /tmp/tree-sitter.gz > ~/.local/bin/tree-sitter
+    rm /tmp/tree-sitter.gz
+    chmod +x ~/.local/bin/tree-sitter
+    echo "installed tree-sitter ${TS_VER}"
+fi
+
 #################
 ### LANGUAGES ###
 #################
