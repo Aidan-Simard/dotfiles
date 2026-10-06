@@ -66,34 +66,79 @@ require("lazy").setup({
       end,
     },
     {
-      -- master branch (archived) only supports Neovim <= 0.11; the main branch
-      -- rewrite needs 0.12+ and a different setup API. Keep in sync with
+      -- main branch rewrite; requires Neovim >= 0.12. Keep in sync with
       -- NVIM_VER in apply.sh.
       "nvim-treesitter/nvim-treesitter",
-      branch = 'master',
+      branch = 'main',
       lazy = false,
       build = ":TSUpdate",
 
       config = function()
-        require("nvim-treesitter.configs").setup {
-          ensure_installed = {
-            "lua",
-            "python",
-            "bash",
-            "go",
-            "vim",
-            "vimdoc",
-            "query"
-          },
-          auto_install = true,
-          highlight = {
-            enable = true,
-            additional_vim_regex_highlighting = false
-          },
-          indent = {
-            enable = true
-          }
+        -- parsers and query symlinks install into stdpath('data')/site
+        require("nvim-treesitter").setup {}
+
+        require("nvim-treesitter").install {
+          "lua",
+          "python",
+          "bash",
+          "go",
+          "vim",
+          "vimdoc",
+          "query",
+          "markdown",
+          "markdown_inline",
+          "html",
+          "htmldjango",
+          "css",
+          "javascript",
+          "typescript",
+          "tsx",
+          "svelte",
+          "json",
+          "yaml",
+          "c",
+          "make",
+          "gomod",
+          "regex",
+          "requirements",
+          "ssh_config",
+          "terraform",
+          "pem",
         }
+
+        -- no highlight/indent modules on main: drive both from FileType.
+        -- vim.treesitter.start() also disables legacy vim regex highlighting,
+        -- matching the old additional_vim_regex_highlighting = false.
+        local installing = {}
+        vim.api.nvim_create_autocmd("FileType", {
+          callback = function(ev)
+            local lang = vim.treesitter.language.get_lang(ev.match) or ev.match
+
+            pcall(vim.treesitter.start, ev.buf, lang)
+
+            -- get_indent() returns 0 without an indents query, which would
+            -- flatten indentation, so only set it where the query exists
+            local ok, indent_query = pcall(vim.treesitter.query.get, lang, "indents")
+            if ok and indent_query then
+              vim.bo[ev.buf].indentexpr = "v:lua.require'nvim-treesitter'.indentexpr()"
+            end
+
+            -- master branch's auto_install, emulated: fetch a parser the first
+            -- time a filetype needs one that isn't installed yet.
+            -- language.add() returns nil+err rather than throwing
+            local added = select(2, pcall(vim.treesitter.language.add, lang))
+            if not added and not installing[lang] then
+              local parsers_ok, parsers = pcall(require, "nvim-treesitter.parsers")
+              if parsers_ok and parsers[lang] then
+                installing[lang] = true
+                require("nvim-treesitter").install({ lang }):await(function()
+                  installing[lang] = nil
+                  pcall(vim.treesitter.start, ev.buf, lang)
+                end)
+              end
+            end
+          end,
+        })
       end
     },
     {
