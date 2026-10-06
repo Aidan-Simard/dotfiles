@@ -66,6 +66,9 @@ require("lazy").setup({
       end,
     },
     {
+      -- master branch (archived) only supports Neovim <= 0.11; the main branch
+      -- rewrite needs 0.12+ and a different setup API. Keep in sync with
+      -- NVIM_VER in apply.sh.
       "nvim-treesitter/nvim-treesitter",
       branch = 'master',
       lazy = false,

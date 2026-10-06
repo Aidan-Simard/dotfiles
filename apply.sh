@@ -15,7 +15,11 @@ sudo apt-get -qq -y install tmux wget build-essential ripgrep
 ##############
 ### NEOVIM ###
 ##############
-NVIM_VER="v0.12.5"
+# Pinned to 0.11.x: nvim-treesitter's master branch (archived, used by init.lua)
+# does not support Neovim 0.12 -- its query predicates/directives break because
+# 0.12 passes node lists instead of single nodes. Bumping this to 0.12 requires
+# migrating nvim-treesitter to its main branch rewrite first.
+NVIM_VER="v0.11.7"
 install_nvim() {
     NVIM_DIR="nvim-linux-x86_64"
     NVIM_TAR="${NVIM_DIR}.tar.gz"
