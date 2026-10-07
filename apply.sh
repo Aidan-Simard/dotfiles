@@ -10,7 +10,7 @@ include() {
 ####################
 ### DEPENDENCIES ###
 ####################
-sudo apt-get -qq -y install tmux wget build-essential ripgrep xclip curl git
+sudo apt-get -qq -y install tmux wget build-essential ripgrep xclip curl git python3-venv
 
 ##############
 ### NEOVIM ###
