@@ -36,7 +36,8 @@ require("lazy").setup({
     },
     {
       'nvim-telescope/telescope.nvim',
-      tag = '0.1.8',
+      -- no tag: 0.1.8 predates nvim-treesitter main compat (and the nvim 0.12
+      -- deprecation fixes); lazy-lock pins the commit
       dependencies = { 'nvim-lua/plenary.nvim' },
 
       config = function()
