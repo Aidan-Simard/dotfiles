@@ -165,7 +165,8 @@ require("lazy").setup({
       opts = {
         ensure_installed = {
           "lua_ls",
-          "ruff"
+          "ruff",
+          "ty"
         }
       },
       dependencies = {
@@ -225,6 +226,9 @@ vim.opt.termguicolors = true
 vim.opt.scrolloff = 8
 
 vim.opt.signcolumn = "yes"
+
+-- border around floating windows (LSP hover, diagnostics)
+vim.o.winborder = "single"
 
 -- write to swap every 0.5s
 vim.opt.updatetime = 500
