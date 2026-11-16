@@ -10,7 +10,21 @@ include() {
 ####################
 ### DEPENDENCIES ###
 ####################
-sudo apt-get -qq -y install tmux wget build-essential ripgrep xclip curl git python3-venv
+if command -v apt-get >/dev/null 2>&1; then
+    PKG_MGR=apt
+elif command -v dnf >/dev/null 2>&1; then
+    PKG_MGR=dnf
+else
+    echo "Unsupported distro: neither apt-get nor dnf found" >&2
+    exit 1
+fi
+
+if [ "$PKG_MGR" = "apt" ]; then
+    sudo apt-get -qq -y install tmux wget build-essential ripgrep xclip wl-clipboard curl git python3-venv
+else
+    # Fedora: gcc/gcc-c++/make replace build-essential; venv ships with python3
+    sudo dnf -y install tmux wget gcc gcc-c++ make ripgrep xclip wl-clipboard curl git python3
+fi
 
 ##############
 ### NEOVIM ###
@@ -121,9 +135,10 @@ include '. "$HOME/.asdf/completions/asdf.bash"' ~/.bashrc_extras
 include '[ -f "${ASDF_DATA_DIR:-$HOME/.asdf}/plugins/golang/set-env.bash" ] && . "${ASDF_DATA_DIR:-$HOME/.asdf}/plugins/golang/set-env.bash"' ~/.bashrc_extras
 include 'export PATH="$HOME/.local/bin:$PATH"' ~/.bashrc_extras
 
-# add aidan to sudoers
-RULE="aidan ALL=(ALL) NOPASSWD: ALL"
-if [ ! -f /etc/sudoers.d/aidan ] || ! sudo grep -qxF "$RULE" /etc/sudoers.d/aidan 2>/dev/null; then
-    echo "$RULE" | sudo tee /etc/sudoers.d/aidan >/dev/null
-    sudo chmod 0440 /etc/sudoers.d/aidan
+# add current user to sudoers
+RULE="$(whoami) ALL=(ALL) NOPASSWD: ALL"
+SUDOERS_FILE="/etc/sudoers.d/$(whoami)"
+if [ ! -f "$SUDOERS_FILE" ] || ! sudo grep -qxF "$RULE" "$SUDOERS_FILE" 2>/dev/null; then
+    echo "$RULE" | sudo tee "$SUDOERS_FILE" >/dev/null
+    sudo chmod 0440 "$SUDOERS_FILE"
 fi
