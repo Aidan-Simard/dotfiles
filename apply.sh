@@ -76,26 +76,28 @@ fi
 #################
 
 # --- ASDF & Node.js ---
-ASDF_DIR="$HOME/.asdf"
-if [ ! -d "$ASDF_DIR" ]; then
-    git clone https://github.com/asdf-vm/asdf.git "$ASDF_DIR" --branch v0.14.0
+# --- Node.js (via nvm) ---
+# Skip if nvm is already installed
+if [ ! -d "$HOME/.nvm" ]; then
+    curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
+fi
+# Install Node.js LTS if not already installed
+if ! command -v node >/dev/null 2>&1 || [ "$(node -v 2>/dev/null)" != "v24.22.0" ]; then
+    nvm install lts
 fi
 
-# Load asdf for current script process and subshells
-. "$HOME/.asdf/asdf.sh"
-export PATH="$HOME/.asdf/shims:$HOME/.asdf/bin:$PATH"
-
-# Install Node.js plugin and latest LTS release
-asdf plugin add nodejs https://github.com/asdf-vm/asdf-nodejs.git || true
-NODE_VER="lts"
-asdf install nodejs "$NODE_VER"
-asdf global nodejs "$NODE_VER"
-
-# --- Go ---
-asdf plugin add golang https://github.com/asdf-community/asdf-golang.git || true
-GO_VER="1.27.1"
-asdf install golang "$GO_VER"
-asdf global golang "$GO_VER"
+# --- Go (manual tarball) ---
+# Go is installed manually to $HOME/.local/go
+unset GOROOT 2>/dev/null || true
+if [ ! -d "$HOME/.local/go/go/bin" ]; then
+    # Download Go tarball
+    GO_VER="1.27.2"
+    curl -LO https://go.dev/dl/go${GO_VER}.linux-amd64.tar.gz
+    rm -rf "$HOME/.local/go"
+    mkdir -p "$HOME/.local/go"
+    tar -C "$HOME/.local/go" -xzf "go${GO_VER}.linux-amd64.tar.gz"
+    rm "go${GO_VER}.linux-amd64.tar.gz"
+fi
 
 # --- UV (Python package manager) ---
 if ! command -v uv >/dev/null 2>&1; then
@@ -129,11 +131,10 @@ fi
 include '. ~/.bashrc_extras' ~/.bashrc
 sed -i '/^#force_color_prompt=yes/s/^#//' ~/.bashrc
 
-# sync language-related shell env into .bashrc_extras; asdf must come before golang set-env
-include '. "$HOME/.asdf/asdf.sh"' ~/.bashrc_extras
-include '. "$HOME/.asdf/completions/asdf.bash"' ~/.bashrc_extras
-include '[ -f "${ASDF_DATA_DIR:-$HOME/.asdf}/plugins/golang/set-env.bash" ] && . "${ASDF_DATA_DIR:-$HOME/.asdf}/plugins/golang/set-env.bash"' ~/.bashrc_extras
-include 'export PATH="$HOME/.local/bin:$PATH"' ~/.bashrc_extras
+# sync language-related shell env into .bashrc_extras; nvm and Go manual install
+include 'export PATH="$HOME/.nvm:$PATH"' ~/.bashrc_extras
+include '[ -s "$HOME/.nvm/nvm.sh" ] && . "$HOME/.nvm/nvm.sh"' ~/.bashrc_extras
+include 'export PATH="$HOME/.local/go/go/bin:$PATH"' ~/.bashrc_extras
 
 # add current user to sudoers
 RULE="$(whoami) ALL=(ALL) NOPASSWD: ALL"

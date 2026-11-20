@@ -143,30 +143,13 @@ require("lazy").setup({
       end
     },
     {
-      "olimorris/codecompanion.nvim",
-      dependencies = {
-        "nvim-lua/plenary.nvim",
-        "nvim-treesitter/nvim-treesitter",
-      },
-      opts = {
-        chat = {
-          adapter = {
-            name = "copilot",
-            model = "gpt-4.1",
-          },
-        },
-        opts = {
-          log_level = "DEBUG",
-        },
-      },
-    },
-    {
       "mason-org/mason-lspconfig.nvim",
       opts = {
         ensure_installed = {
           "lua_ls",
           "ruff",
-          "ty"
+          "ty",
+          "gopls"
         }
       },
       dependencies = {
@@ -177,7 +160,7 @@ require("lazy").setup({
     {
       "OXY2DEV/markview.nvim",
       lazy = false,
-    }
+    },
   },
   install = { colorscheme = { "habamax" } },
   checker = { enabled = false },
