@@ -2,9 +2,44 @@
 
 set -eou pipefail
 
+# Usage: ./apply.sh [-A|--all] [--laptop]
+#   (default)  install the minimal dev environment: tmux, neovim, tree-sitter,
+#              shell config, and essential CLI tools
+#   -A, --all  also install language toolchains (nvm/node, Go, uv) and their
+#              shell environment
+#   --laptop   also install the laptop-specific .xsessionrc
+
+INSTALL_ALL=false
+INSTALL_LAPTOP=false
+
+usage() {
+    sed -n '5,11p' "$0" | sed 's/^# \{0,1\}//'
+}
+
+while [ $# -gt 0 ]; do
+    case "$1" in
+        -A|--all) INSTALL_ALL=true ;;
+        --laptop) INSTALL_LAPTOP=true ;;
+        -h|--help) usage; exit 0 ;;
+        *)
+            echo "Unknown option: $1" >&2
+            usage >&2
+            exit 1
+            ;;
+    esac
+    shift
+done
+
 # include a line in a file
 include() {
     grep -qxF "$1" "$2" || echo "$1" >>"$2"
+}
+
+# remove an exact line from a file (used to migrate old language env lines)
+remove_line() {
+    [ -f "$2" ] || return 0
+    grep -vxF "$1" "$2" >"$2.tmp" || true
+    mv "$2.tmp" "$2"
 }
 
 ####################
@@ -71,37 +106,49 @@ if ! ~/.local/bin/tree-sitter --version 2>/dev/null | grep -q "${TS_VER#v}"; the
     echo "installed tree-sitter ${TS_VER}"
 fi
 
-#################
-### LANGUAGES ###
-#################
+############################
+### LANGUAGES (--all)    ###
+############################
+install_languages() {
+    # --- Node.js (via nvm) ---
+    # Skip if nvm is already installed
+    if [ ! -d "$HOME/.nvm" ]; then
+        curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
+    fi
 
-# --- ASDF & Node.js ---
-# --- Node.js (via nvm) ---
-# Skip if nvm is already installed
-if [ ! -d "$HOME/.nvm" ]; then
-    curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
-fi
-# Install Node.js LTS if not already installed
-if ! command -v node >/dev/null 2>&1 || [ "$(node -v 2>/dev/null)" != "v24.22.0" ]; then
-    nvm install lts
-fi
+    export NVM_DIR="$HOME/.nvm"
+    # shellcheck disable=SC1091
+    [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
 
-# --- Go (manual tarball) ---
-# Go is installed manually to $HOME/.local/go
-unset GOROOT 2>/dev/null || true
-if [ ! -d "$HOME/.local/go/go/bin" ]; then
-    # Download Go tarball
-    GO_VER="1.27.2"
-    curl -LO https://go.dev/dl/go${GO_VER}.linux-amd64.tar.gz
-    rm -rf "$HOME/.local/go"
-    mkdir -p "$HOME/.local/go"
-    tar -C "$HOME/.local/go" -xzf "go${GO_VER}.linux-amd64.tar.gz"
-    rm "go${GO_VER}.linux-amd64.tar.gz"
-fi
+    # Install Node.js LTS if not already installed
+    if ! command -v node >/dev/null 2>&1 || [ "$(node -v 2>/dev/null)" != "v24.22.0" ]; then
+        nvm install lts
+    fi
 
-# --- UV (Python package manager) ---
-if ! command -v uv >/dev/null 2>&1; then
-    curl -LsSf https://astral.sh/uv/install.sh | sh
+    # --- Go (manual tarball) ---
+    # Go is installed manually to $HOME/.local/go
+    unset GOROOT 2>/dev/null || true
+    if [ ! -d "$HOME/.local/go/go/bin" ]; then
+        # Download Go tarball
+        GO_VER="1.27.2"
+        curl -LO https://go.dev/dl/go${GO_VER}.linux-amd64.tar.gz
+        rm -rf "$HOME/.local/go"
+        mkdir -p "$HOME/.local/go"
+        tar -C "$HOME/.local/go" -xzf "go${GO_VER}.linux-amd64.tar.gz"
+        rm "go${GO_VER}.linux-amd64.tar.gz"
+    fi
+
+    # --- UV (Python package manager) ---
+    if ! command -v uv >/dev/null 2>&1; then
+        curl -LsSf https://astral.sh/uv/install.sh | sh
+    fi
+
+    # shell environment for the language toolchains
+    cp .bashrc_languages ~/.bashrc_languages
+}
+
+if $INSTALL_ALL; then
+    install_languages
 fi
 
 export PATH="$HOME/.local/bin:$PATH"
@@ -123,7 +170,7 @@ fi
 cp .tmux.conf ~
 
 # only for laptop
-if [ "${1:-}" = "laptop" ]; then
+if $INSTALL_LAPTOP; then
     cp .xsessionrc ~
 fi
 
@@ -131,10 +178,23 @@ fi
 include '. ~/.bashrc_extras' ~/.bashrc
 sed -i '/^#force_color_prompt=yes/s/^#//' ~/.bashrc
 
-# sync language-related shell env into .bashrc_extras; nvm and Go manual install
-include 'export PATH="$HOME/.nvm:$PATH"' ~/.bashrc_extras
-include '[ -s "$HOME/.nvm/nvm.sh" ] && . "$HOME/.nvm/nvm.sh"' ~/.bashrc_extras
-include 'export PATH="$HOME/.local/go/go/bin:$PATH"' ~/.bashrc_extras
+# keep the language env for machines that already have toolchains installed,
+# even when applying the minimal environment
+if [ -d "$HOME/.nvm" ] || [ -d "$HOME/.local/go" ]; then
+    [ -f "$HOME/.bashrc_languages" ] || cp .bashrc_languages ~/.bashrc_languages
+fi
+
+# migrate language env out of .bashrc_extras (now lives in .bashrc_languages)
+remove_line 'export NVM_DIR="$HOME/.nvm"' ~/.bashrc_extras
+remove_line '[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"' ~/.bashrc_extras
+remove_line '[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"' ~/.bashrc_extras
+remove_line '[ -s "$HOME/.nvm/nvm.sh" ] && . "$HOME/.nvm/nvm.sh"' ~/.bashrc_extras
+remove_line 'export PATH="$HOME/.nvm:$PATH"' ~/.bashrc_extras
+remove_line 'export PATH="$HOME/.local/go/go/bin:$PATH"' ~/.bashrc_extras
+remove_line 'export PATH="$(go env GOPATH)/bin:$PATH"' ~/.bashrc_extras
+
+# source language toolchain env if it has been installed with --all
+include '[ -f ~/.bashrc_languages ] && . ~/.bashrc_languages' ~/.bashrc_extras
 
 # add current user to sudoers
 RULE="$(whoami) ALL=(ALL) NOPASSWD: ALL"
