@@ -1,0 +1,8 @@
+{
+  "lastChangelogVersion": "1.6.0",
+  "theme": "rose-pine",
+  "defaultProvider": "deepseek",
+  "defaultModel": "deepseek-flash",
+  "defaultThinkingLevel": "low",
+  "hideThinkingBlock": true
+}

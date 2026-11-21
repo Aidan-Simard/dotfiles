@@ -5,8 +5,8 @@ set -eou pipefail
 # Usage: ./apply.sh [-A|--all] [--laptop]
 #   (default)  install the minimal dev environment: tmux, neovim, tree-sitter,
 #              shell config, and essential CLI tools
-#   -A, --all  also install language toolchains (nvm/node, Go, uv) and their
-#              shell environment
+#   -A, --all  also install language toolchains (nvm/node, Go, uv), their
+#              shell environment, and the Pi coding agent
 #   --laptop   also install the laptop-specific .xsessionrc
 
 INSTALL_ALL=false
@@ -147,8 +147,33 @@ install_languages() {
     cp .bashrc_languages ~/.bashrc_languages
 }
 
+install_pi() {
+    local agent_dir="${PI_CODING_AGENT_DIR:-$HOME/.pi/agent}"
+
+    if command -v pi >/dev/null 2>&1 && [ -f "$agent_dir/install/managed-install.json" ]; then
+        # Already a managed install: let Pi update itself. This is a no-op when
+        # there is no newer release, so repeated --all runs don't reinstall.
+        if ! pi update; then
+            echo "install_pi: 'pi update' failed; keeping the existing install" >&2
+        fi
+        return 0
+    fi
+
+    # No managed install yet (fresh machine or legacy npm install): use Pi's
+    # official installer, which installs the latest release into
+    # ~/.pi/agent/install and symlinks ~/.local/bin/pi. setsid detaches it from
+    # the controlling terminal so its interactive confirmation menu is skipped
+    # and it proceeds with the default install/migrate action.
+    if command -v setsid >/dev/null 2>&1; then
+        setsid -w sh -c 'curl -fsSL https://pi.dev/install.sh | sh'
+    else
+        curl -fsSL https://pi.dev/install.sh | sh
+    fi
+}
+
 if $INSTALL_ALL; then
     install_languages
+    install_pi
 fi
 
 export PATH="$HOME/.local/bin:$PATH"
@@ -168,6 +193,12 @@ if [ ! -f "$HOME/.bashrc_extras" ]; then
 fi
 
 cp .tmux.conf ~
+
+# Pi agent config: settings + themes only. Credentials (auth.json), sessions,
+# and the model cache are deliberately never tracked and are left untouched.
+mkdir -p ~/.pi/agent/themes
+cp pi-agent/settings.json ~/.pi/agent/settings.json
+cp pi-agent/themes/*.json ~/.pi/agent/themes/
 
 # only for laptop
 if $INSTALL_LAPTOP; then
