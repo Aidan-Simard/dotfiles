@@ -8,10 +8,13 @@ RUN apt-get update \
         bash \
         ca-certificates \
         curl \
+        fd-find \
         git \
         ripgrep \
         xz-utils \
     && rm -rf /var/lib/apt/lists/*
+
+RUN ln -s /usr/bin/fdfind /usr/local/bin/fd
 
 RUN curl -fsSL "https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VERSION}-linux-x64.tar.xz" \
         | tar -xJ -C /usr/local --strip-components=1

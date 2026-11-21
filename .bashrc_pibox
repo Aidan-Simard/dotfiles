@@ -42,6 +42,11 @@ _pibox_prepare() {
         cp "$HOME/.pi/agent/settings.json" "$PIBOX_HOME/.pi/agent/settings.json"
     fi
 
+    # Keep custom themes referenced by settings.json available in the sandbox.
+    if [ ! -d "$PIBOX_HOME/.pi/agent/themes" ] && [ -d "$HOME/.pi/agent/themes" ]; then
+        cp -R "$HOME/.pi/agent/themes" "$PIBOX_HOME/.pi/agent/themes"
+    fi
+
     if ! podman image exists "$PIBOX_IMAGE" >/dev/null 2>&1; then
         echo "pibox: building $PIBOX_IMAGE (first run only)..." >&2
         podman build -t "$PIBOX_IMAGE" -f "$PIBOX_CONTAINERFILE" \

@@ -158,8 +158,60 @@ require("lazy").setup({
       },
     },
     {
-      "OXY2DEV/markview.nvim",
-      lazy = false,
+      "blackhat-7/vellum.nvim",
+      ft = "markdown",
+      keys = { { "<leader>mp", "<cmd>Vellum<cr>", desc = "Markdown preview" } },
+      opts = {
+        split = "right",
+        auto_open = true,
+      },
+      config = function(_, opts)
+        require("vellum").setup(opts)
+
+        -- Windows Terminal has no kitty graphics protocol, so vellum warns once
+        -- per session that diagrams fall back to code. Nothing actionable here.
+        local notify = vim.notify
+
+        vim.notify = function(msg, level, notify_opts)
+          if type(msg) == "string" and msg:match("^vellum: this terminal can't show images") then
+            return
+          end
+
+          return notify(msg, level, notify_opts)
+        end
+
+        -- vellum aligns the preview to the cursor's screen row on every move,
+        -- which scrolls a document that would fit entirely out of the pane.
+        -- When the whole rendered document fits, keep it pinned to the top.
+        local function pin()
+          for _, win in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
+            local buf = vim.api.nvim_win_get_buf(win)
+
+            if vim.api.nvim_buf_get_name(buf):match("vellum://preview$") then
+              if vim.api.nvim_buf_line_count(buf) <= vim.api.nvim_win_get_height(win) then
+                vim.api.nvim_win_call(win, function()
+                  if vim.fn.winsaveview().topline ~= 1 then
+                    vim.fn.winrestview({ topline = 1 })
+                  end
+                end)
+              end
+
+              return
+            end
+          end
+        end
+
+        vim.api.nvim_create_autocmd({
+          "CursorMoved",
+          "CursorMovedI",
+          "TextChanged",
+          "TextChangedI",
+          "TextChangedP",
+          "WinNew",
+          "BufWinEnter",
+          "WinResized",
+        }, { callback = function() vim.schedule(pin) end })
+      end,
     },
   },
   install = { colorscheme = { "habamax" } },
