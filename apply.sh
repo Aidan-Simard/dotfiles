@@ -5,15 +5,15 @@ set -eou pipefail
 # Usage: ./apply.sh [-A|--all] [--laptop]
 #   (default)  install the minimal dev environment: tmux, neovim, tree-sitter,
 #              shell config, and essential CLI tools
-#   -A, --all  also install language toolchains (nvm/node, Go, uv), their
-#              shell environment, and the Pi sandbox (podman + Debian image)
+#   -A, --all  also install language toolchains (nvm/node, Go, uv) and their
+#              shell environment
 #   --laptop   also install the laptop-specific .xsessionrc
 
 INSTALL_ALL=false
 INSTALL_LAPTOP=false
 
 usage() {
-    sed -n '5,10p' "$0" | sed 's/^# \{0,1\}//'
+    sed -n '5,11p' "$0" | sed 's/^# \{0,1\}//'
 }
 
 while [ $# -gt 0 ]; do
@@ -147,29 +147,8 @@ install_languages() {
     cp .bashrc_languages ~/.bashrc_languages
 }
 
-install_pi_box() {
-    # --- Podman ---
-    if ! command -v podman >/dev/null 2>&1; then
-        if [ "$PKG_MGR" = "apt" ]; then
-            sudo apt-get -qq -y install podman
-        else
-            sudo dnf -y install podman
-        fi
-    fi
-
-    # --- Pi sandbox shell helpers ---
-    cp .bashrc_pibox ~
-
-    # --- Sandbox image definition ---
-    mkdir -p ~/.config/pi-box
-    cp pi-box/Containerfile ~/.config/pi-box/Containerfile
-
-    echo "installed Pi sandbox helpers; the Debian image builds on first pibox run"
-}
-
 if $INSTALL_ALL; then
     install_languages
-    install_pi_box
 fi
 
 export PATH="$HOME/.local/bin:$PATH"
@@ -197,11 +176,6 @@ fi
 
 # source extra config (which in turn loads machine-local config) from ~/.bashrc
 include '. ~/.bashrc_extras' ~/.bashrc
-
-# Pi sandbox helpers are installed with --all only
-if $INSTALL_ALL; then
-    include '[ -f ~/.bashrc_pibox ] && . ~/.bashrc_pibox' ~/.bashrc
-fi
 
 sed -i '/^#force_color_prompt=yes/s/^#//' ~/.bashrc
 
