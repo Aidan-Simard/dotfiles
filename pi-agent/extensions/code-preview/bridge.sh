@@ -48,6 +48,9 @@ case "$EVENT" in
   post)
     MOD="code-preview.post_tool"
     ;;
+  review)
+    MOD=""
+    ;;
   *)
     exit 1
     ;;
@@ -56,6 +59,18 @@ esac
 # shellcheck source=/dev/null
 source "$PLUGIN/bin/nvim-socket.sh" "$CWD" 2>/dev/null || exit 1
 [[ -z "${NVIM_SOCKET:-}" ]] && exit 1
+
+# review: hand the args file (decision file + key hints) to review.lua, which
+# installs Accept/Reject keymaps on the already-open diff tab.
+if [[ "$EVENT" == "review" ]]; then
+  SELF_DIR="$(cd "$(dirname "$0")" && pwd)"
+  REVIEW_LUA="$SELF_DIR/review.lua"
+  [[ -r "$REVIEW_LUA" ]] || exit 1
+  case "$REVIEW_LUA$PAYLOAD" in *"'"*) exit 1 ;; esac
+  "$NVIM_BIN" --server "$NVIM_SOCKET" --remote-expr \
+    "luaeval(\"dofile('$REVIEW_LUA').start('$PAYLOAD')\")" 2>/dev/null
+  exit $?
+fi
 
 ARGS_FILE="$(mktemp "${TMPDIR:-/tmp}/pi-code-preview-args.XXXXXX")" || exit 1
 trap 'rm -f "$ARGS_FILE"' EXIT

@@ -7,10 +7,14 @@
  *   2. we translate pi's payload into code-preview's canonical shape and send
  *      it through bridge.sh -> nvim RPC -> code-preview.pre_tool.handle()
  *   3. Neovim opens the proposed change as a diff tab
- *   4. if code-preview reported a permission decision (its "review gate"), we
- *      prompt Accept / Reject in pi's TUI
+ *   4. review.lua adds `<leader>da` (accept) / `<leader>dr` (reject) to that
+ *      tab; the decision comes back through a JSON file we poll
  *   5. Accept -> the diff is closed after the write completes (`tool_result`)
  *      Reject -> the diff is closed now and the tool call is blocked
+ *
+ * If the Neovim-side prompt cannot be installed (plugin too old, no review.lua)
+ * the extension falls back to a pi TUI dialog ("pi" gate). Config `gate: false`
+ * shows the preview but never waits for a decision.
  *
  * If Neovim is unreachable, code-preview abstains (prints nothing) and we let
  * the tool call run untouched — same fallback the plugin uses for its native
@@ -19,9 +23,10 @@
  * Config: ~/.pi/agent/code-preview.json (optional)
  *   {
  *     "enabled": true,
- *     "gate": true,          // false = show the preview but never prompt
- *     "pluginDir": "...",    // else CODE_PREVIEW_NVIM, else auto-discovery
- *     "timeoutMs": 15000     // timeout for each nvim RPC call
+ *     "gate": "nvim",         // "nvim" | "pi" | false
+ *     "pluginDir": "...",     // else CODE_PREVIEW_NVIM, else auto-discovery
+ *     "timeoutMs": 15000,     // timeout for each nvim RPC call
+ *     "reviewTimeoutMs": 1800000
  *   }
  */
 
@@ -41,18 +46,28 @@ const EXT_DIR = dirname(fileURLToPath(import.meta.url));
 const BRIDGE = join(EXT_DIR, "bridge.sh");
 const CONFIG_PATH = join(homedir(), ".pi", "agent", "code-preview.json");
 
+type GateMode = "nvim" | "pi" | false;
+
 interface BridgeConfig {
 	enabled: boolean;
-	gate: boolean;
+	gate: GateMode;
 	pluginDir?: string;
 	timeoutMs: number;
+	reviewTimeoutMs: number;
 }
 
 const DEFAULT_CONFIG: BridgeConfig = {
 	enabled: true,
-	gate: true,
+	gate: "nvim",
 	timeoutMs: 15_000,
+	reviewTimeoutMs: 30 * 60_000,
 };
+
+function normalizeGate(value: unknown): GateMode {
+	if (value === false) return false;
+	if (value === "pi" || value === true) return "pi";
+	return "nvim";
+}
 
 /** Canonical code-preview proposal shape (the "claudecode" backend is identity). */
 interface CanonicalPayload {
@@ -64,9 +79,10 @@ interface CanonicalPayload {
 interface PendingClose {
 	pluginDir: string;
 	payload: CanonicalPayload;
-	cwd: string;
 	timeoutMs: number;
 }
+
+type Decision = "accept" | "reject" | "closed";
 
 function expandHome(p: string): string {
 	return p.startsWith("~/") ? join(homedir(), p.slice(2)) : p;
@@ -74,8 +90,12 @@ function expandHome(p: string): string {
 
 function loadConfig(): BridgeConfig {
 	try {
-		const raw = JSON.parse(readFileSync(CONFIG_PATH, "utf8")) as Partial<BridgeConfig>;
-		return { ...DEFAULT_CONFIG, ...raw };
+		const raw = JSON.parse(readFileSync(CONFIG_PATH, "utf8")) as Partial<BridgeConfig> & { gate?: unknown };
+		return {
+			...DEFAULT_CONFIG,
+			...raw,
+			gate: normalizeGate(raw.gate ?? DEFAULT_CONFIG.gate),
+		};
 	} catch {
 		return { ...DEFAULT_CONFIG };
 	}
@@ -97,19 +117,22 @@ function resolvePluginDir(configured?: string): string | undefined {
 	push(configured);
 	push(process.env.CODE_PREVIEW_NVIM);
 
-	const dataHome = process.env.XDG_DATA_HOME || join(homedir(), ".local", "share");
-	push(join(dataHome, "nvim", "lazy", "code-preview.nvim"));
+	const dataHomes = [process.env.XDG_DATA_HOME, join(homedir(), ".local", "share")];
+	for (const dataHome of dataHomes) {
+		if (!dataHome) continue;
+		push(join(dataHome, "nvim", "lazy", "code-preview.nvim"));
 
-	// pack/*/start|opt/code-preview.nvim (manual / package-manager installs)
-	const packRoot = join(dataHome, "nvim", "site", "pack");
-	try {
-		for (const pkg of readdirSync(packRoot)) {
-			for (const kind of ["start", "opt"]) {
-				push(join(packRoot, pkg, kind, "code-preview.nvim"));
+		// pack/*/start|opt/code-preview.nvim (manual / package-manager installs)
+		const packRoot = join(dataHome, "nvim", "site", "pack");
+		try {
+			for (const pkg of readdirSync(packRoot)) {
+				for (const kind of ["start", "opt"]) {
+					push(join(packRoot, pkg, kind, "code-preview.nvim"));
+				}
 			}
+		} catch {
+			// no pack dir — fine
 		}
-	} catch {
-		// no pack dir — fine
 	}
 
 	push(join(homedir(), "code-preview.nvim"));
@@ -175,15 +198,16 @@ interface BridgeResult {
 async function callBridge(
 	pi: ExtensionAPI,
 	pluginDir: string,
-	eventName: "pre" | "post",
-	payload: CanonicalPayload,
+	eventName: "pre" | "post" | "review",
+	args: unknown,
+	cwd: string,
 	timeoutMs: number,
 ): Promise<BridgeResult> {
 	const dir = mkdtempSync(join(tmpdir(), "pi-code-preview-"));
-	const payloadFile = join(dir, "payload.json");
-	writeFileSync(payloadFile, JSON.stringify(payload), "utf8");
+	const argsFile = join(dir, "args.json");
+	writeFileSync(argsFile, JSON.stringify(args), "utf8");
 	try {
-		const result = await pi.exec("bash", [BRIDGE, pluginDir, eventName, payloadFile, payload.cwd], {
+		const result = await pi.exec("bash", [BRIDGE, pluginDir, eventName, argsFile, cwd], {
 			timeout: timeoutMs,
 		});
 		return { code: result.code ?? 1, stdout: result.stdout ?? "" };
@@ -197,6 +221,62 @@ async function callBridge(
 function reviewablePath(payload: CanonicalPayload): string {
 	const file = payload.tool_input.file_path;
 	return typeof file === "string" ? relative(payload.cwd, file) || file : "file";
+}
+
+const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
+
+/**
+ * Install accept/reject keys on the open diff tab and wait for the decision.
+ * Returns undefined when the Neovim side could not be set up (caller falls
+ * back to the pi dialog).
+ */
+async function reviewInNeovim(opts: {
+	pi: ExtensionAPI;
+	pluginDir: string;
+	payload: CanonicalPayload;
+	label: string;
+	config: BridgeConfig;
+	signal?: AbortSignal;
+}): Promise<Decision | undefined> {
+	const { pi, pluginDir, payload, label, config, signal } = opts;
+	const dir = mkdtempSync(join(tmpdir(), "pi-code-preview-review-"));
+	const decisionFile = join(dir, "decision.json");
+
+	try {
+		const res = await callBridge(
+			pi,
+			pluginDir,
+			"review",
+			{
+				decision_file: decisionFile,
+				label,
+				keys: { accept: "<leader>da", reject: "<leader>dr" },
+			},
+			payload.cwd,
+			config.timeoutMs,
+		);
+		if (res.code !== 0) return undefined;
+
+		const deadline = Date.now() + config.reviewTimeoutMs;
+		while (Date.now() < deadline) {
+			if (signal?.aborted) return "closed";
+
+			try {
+				const raw = JSON.parse(readFileSync(decisionFile, "utf8")) as { decision?: Decision };
+				if (raw?.decision === "accept" || raw?.decision === "reject" || raw?.decision === "closed") {
+					return raw.decision;
+				}
+			} catch {
+				// not written yet
+			}
+
+			await sleep(150);
+		}
+
+		return "closed"; // review timed out: do not apply silently
+	} finally {
+		rmSync(dir, { recursive: true, force: true });
+	}
 }
 
 export default function (pi: ExtensionAPI): void {
@@ -237,10 +317,10 @@ export default function (pi: ExtensionAPI): void {
 		const payload = buildPayload(event, ctx.cwd);
 		if (!payload) return undefined;
 		const toolCallId = event.toolCallId;
-		const cwd = ctx.cwd;
+		const gate = config.gate;
 
 		return serialize(async () => {
-			const pre = await callBridge(pi, pluginDir, "pre", payload, config.timeoutMs);
+			const pre = await callBridge(pi, pluginDir, "pre", payload, ctx.cwd, config.timeoutMs);
 			if (pre.code !== 0) return undefined; // Neovim unreachable: abstain
 
 			// code-preview only emits a permission decision for Edit/Write/
@@ -249,24 +329,39 @@ export default function (pi: ExtensionAPI): void {
 			const asked = /"permissionDecision"\s*:\s*"ask"/.test(pre.stdout);
 			if (!asked) return undefined;
 
-			if (!config.gate) {
-				pendingClose.set(toolCallId, { pluginDir, payload, cwd, timeoutMs: config.timeoutMs });
-				return undefined;
-			}
-
 			const rel = reviewablePath(payload);
-			const choice = await ctx.ui.select(
-				`Apply ${event.toolName} to ${rel}?`,
-				["Accept", "Reject"],
-			);
 
-			if (choice === "Accept") {
-				pendingClose.set(toolCallId, { pluginDir, payload, cwd, timeoutMs: config.timeoutMs });
+			if (gate === false) {
+				pendingClose.set(toolCallId, { pluginDir, payload, timeoutMs: config.timeoutMs });
 				return undefined;
 			}
 
-			// Rejected (or dialog dismissed): close the preview and stop the write.
-			await callBridge(pi, pluginDir, "post", payload, config.timeoutMs);
+			let decision: Decision | undefined;
+
+			if (gate === "nvim") {
+				decision = await reviewInNeovim({
+					pi,
+					pluginDir,
+					payload,
+					label: rel,
+					config,
+					signal: ctx.signal,
+				});
+				// No keymaps installed (headless / older copy): fall back to pi.
+			}
+
+			if (decision === undefined) {
+				const choice = await ctx.ui.select(`Apply ${event.toolName} to ${rel}?`, ["Accept", "Reject"]);
+				decision = choice === "Accept" ? "accept" : "reject";
+			}
+
+			if (decision === "accept") {
+				pendingClose.set(toolCallId, { pluginDir, payload, timeoutMs: config.timeoutMs });
+				return undefined;
+			}
+
+			// Rejected, preview closed, or review timed out: close and block.
+			await callBridge(pi, pluginDir, "post", payload, ctx.cwd, config.timeoutMs);
 			ctx.ui.notify(`code-preview: rejected ${event.toolName} on ${rel}`, "info");
 			return {
 				block: true,
@@ -280,8 +375,7 @@ export default function (pi: ExtensionAPI): void {
 		if (!pending) return undefined;
 		pendingClose.delete(event.toolCallId);
 
-		await callBridge(pi, pending.pluginDir, "post", pending.payload, pending.timeoutMs);
-
+		await callBridge(pi, pluginDir!, "post", pending.payload, pending.payload.cwd, pending.timeoutMs);
 		if (event.isError) {
 			ctx.ui.notify(`code-preview: ${event.toolName} failed after review; preview closed`, "warning");
 		}
