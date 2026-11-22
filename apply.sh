@@ -201,15 +201,11 @@ fi
 
 cp .tmux.conf ~
 
-# Pi agent config: settings, themes, and extensions. Credentials (auth.json),
-# sessions, and the model cache are deliberately never tracked and are left
-# untouched.
-mkdir -p ~/.pi/agent/themes ~/.pi/agent/extensions
+# Pi agent config: settings + themes only. Credentials (auth.json), sessions,
+# and the model cache are deliberately never tracked and are left untouched.
+mkdir -p ~/.pi/agent/themes
 cp pi-agent/settings.json ~/.pi/agent/settings.json
 cp pi-agent/themes/*.json ~/.pi/agent/themes/
-cp -R pi-agent/extensions/. ~/.pi/agent/extensions/
-# helper scripts invoked by extensions must stay executable (cp masks by umask)
-find ~/.pi/agent/extensions -name '*.sh' -exec chmod +x {} +
 
 # only for laptop
 if $INSTALL_LAPTOP; then
