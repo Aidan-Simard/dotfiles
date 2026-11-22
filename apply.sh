@@ -149,25 +149,32 @@ install_languages() {
 
 install_pi() {
     local agent_dir="${PI_CODING_AGENT_DIR:-$HOME/.pi/agent}"
+    local pi_bin="$agent_dir/bin/pi"
 
-    if command -v pi >/dev/null 2>&1 && [ -f "$agent_dir/install/managed-install.json" ]; then
+    if [ -f "$agent_dir/install/managed-install.json" ] && [ -x "$pi_bin" ]; then
         # Already a managed install: let Pi update itself. This is a no-op when
         # there is no newer release, so repeated --all runs don't reinstall.
-        if ! pi update; then
+        if ! "$pi_bin" update; then
             echo "install_pi: 'pi update' failed; keeping the existing install" >&2
         fi
-        return 0
+    else
+        # No managed install yet (fresh machine or legacy npm install): use Pi's
+        # official installer, which installs the latest release into
+        # ~/.pi/agent. setsid detaches it from the controlling terminal so its
+        # interactive confirmation menu is skipped and it proceeds with the
+        # default install/migrate action.
+        if command -v setsid >/dev/null 2>&1; then
+            setsid -w sh -c 'curl -fsSL https://pi.dev/install.sh | sh'
+        else
+            curl -fsSL https://pi.dev/install.sh | sh
+        fi
     fi
 
-    # No managed install yet (fresh machine or legacy npm install): use Pi's
-    # official installer, which installs the latest release into
-    # ~/.pi/agent/install and symlinks ~/.local/bin/pi. setsid detaches it from
-    # the controlling terminal so its interactive confirmation menu is skipped
-    # and it proceeds with the default install/migrate action.
-    if command -v setsid >/dev/null 2>&1; then
-        setsid -w sh -c 'curl -fsSL https://pi.dev/install.sh | sh'
-    else
-        curl -fsSL https://pi.dev/install.sh | sh
+    # The managed installer puts the launcher in ~/.pi/agent/bin, which is not
+    # on PATH. ~/.local/bin is, so expose it there.
+    if [ -x "$pi_bin" ]; then
+        mkdir -p "$HOME/.local/bin"
+        ln -sfn "$pi_bin" "$HOME/.local/bin/pi"
     fi
 }
 
