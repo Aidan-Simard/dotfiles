@@ -213,14 +213,6 @@ require("lazy").setup({
         }, { callback = function() vim.schedule(pin) end })
       end,
     },
-    {
-      -- agent edit previews: setup() registers the RPC socket/pidfile that
-      -- pi-agent/extensions/code-preview drives from pi.
-      "Cannon07/code-preview.nvim",
-      config = function()
-        require("code-preview").setup()
-      end,
-    },
   },
   install = { colorscheme = { "habamax" } },
   checker = { enabled = false },
