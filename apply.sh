@@ -121,8 +121,8 @@ install_languages() {
     [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
 
     # Install Node.js LTS if not already installed
-    if ! command -v node >/dev/null 2>&1 || [ "$(node -v 2>/dev/null)" != "v24.22.0" ]; then
-        nvm install lts
+    if ! command -v node >/dev/null 2>&1 || [ "$(nvm version lts/* 2>/dev/null)" = "N/A" ]; then
+        nvm install --lts
     fi
 
     # --- Go (manual tarball) ---
