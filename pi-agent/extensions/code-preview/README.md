@@ -23,9 +23,7 @@ untouched — the same fallback the plugin uses for its native agents.
 - [code-preview.nvim](https://github.com/Cannon07/code-preview.nvim) installed in
   Neovim and `require("code-preview").setup()` called
 - Neovim >= 0.10 running with its cwd at (or above) the project you run pi in
-- `bash`, plus a `nvim` binary. `bridge.sh` uses `nvim` from `PATH` when
-  present, then `$CODE_PREVIEW_NVIM_BIN`, then common install locations
-  (`/opt/nvim/bin`, `/usr/local/bin`, `/usr/bin`, `~/.local/bin`)
+- `bash` and `nvim` on `PATH`
 - **No `jq` needed** — this bridge bypasses `bin/hook-entry.sh` (which parses the
   agent payload with `jq`) and calls the plugin's RPC dispatcher directly
 

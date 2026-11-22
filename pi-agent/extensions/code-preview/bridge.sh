@@ -22,25 +22,6 @@ CWD="${4:-}"
 [[ -z "$PLUGIN" || -z "$EVENT" || -z "$PAYLOAD" ]] && exit 1
 [[ -r "$PAYLOAD" ]] || exit 1
 
-# Neovim may live off PATH: apply.sh installs it into /opt/nvim, and pi can be
-# started from an environment that never sourced .bashrc. Resolve it once and
-# prepend its directory so nvim-socket.sh and the RPC call below agree.
-NVIM_BIN="${CODE_PREVIEW_NVIM_BIN:-}"
-if [[ -z "$NVIM_BIN" ]]; then
-  NVIM_BIN="$(command -v nvim 2>/dev/null || true)"
-fi
-if [[ -z "$NVIM_BIN" ]]; then
-  for cand in /opt/nvim/bin/nvim /usr/local/bin/nvim /usr/bin/nvim "$HOME/.local/bin/nvim"; do
-    if [[ -x "$cand" ]]; then
-      NVIM_BIN="$cand"
-      break
-    fi
-  done
-fi
-[[ -z "$NVIM_BIN" || ! -x "$NVIM_BIN" ]] && exit 1
-PATH="$(dirname "$NVIM_BIN"):$PATH"
-export PATH
-
 case "$EVENT" in
   pre)
     MOD="code-preview.pre_tool"
@@ -65,7 +46,7 @@ trap 'rm -f "$ARGS_FILE"' EXIT
 # backend: its normaliser is identity, so we send the canonical tool shape.
 { printf '['; cat "$PAYLOAD"; printf ',"claudecode"]'; } >"$ARGS_FILE"
 
-OUT="$("$NVIM_BIN" --server "$NVIM_SOCKET" --remote-expr \
+OUT="$(nvim --server "$NVIM_SOCKET" --remote-expr \
   "luaeval(\"require('code-preview.rpc').dispatch('$MOD', 'handle', '$ARGS_FILE')\")" 2>/dev/null)"
 RC=$?
 
