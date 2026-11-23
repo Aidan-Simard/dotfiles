@@ -284,6 +284,19 @@ vim.o.clipboard = "unnamedplus"
 vim.opt.splitright = true
 vim.opt.splitbelow = true
 
+-- reload buffers when the file changes on disk (pi edits, git checkout, ...)
+-- unmodified buffers reload silently; modified ones keep local edits and warn
+vim.o.autoread = true
+vim.api.nvim_create_autocmd(
+  { "FocusGained", "BufEnter", "CursorHold", "CursorHoldI", "TermLeave" },
+  {
+    group = vim.api.nvim_create_augroup("AutoReadOnChange", { clear = true }),
+    callback = function()
+      if vim.fn.mode() ~= "c" then vim.cmd("checktime") end
+    end,
+  }
+)
+
 -----------
 -- Remap --
 -----------
